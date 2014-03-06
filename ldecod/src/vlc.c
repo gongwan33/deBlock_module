@@ -1,3 +1,4 @@
+#define DEBUG  0
 /**********************************************************************
  * Software Copyright Licensing Disclaimer
  *
@@ -373,6 +374,9 @@ int readSyntaxElement_VLC(SyntaxElement *sym, Bitstream *currStream)
   tracebits(sym->tracestring, sym->len, sym->inf, sym->value1);
 #endif
 
+#if DEBUG 
+  printf("vlc len = %d\n", sym->len);
+#endif
   return 1;
 }
 
@@ -686,6 +690,9 @@ int readSyntaxElement_FLC(SyntaxElement *sym, Bitstream *currStream)
   currStream->frame_bitoffset += sym->len; // move bitstream pointer
   sym->value1 = sym->inf;
 
+#if DEBUG
+  printf("vlc len = %d\n", sym->len);
+#endif
 #if TRACE
   tracebits2(sym->tracestring, sym->len, sym->inf);
 #endif

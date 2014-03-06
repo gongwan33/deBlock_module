@@ -195,7 +195,7 @@ int exit_macroblock(struct img_par *img,struct inp_par *inp,int eos_bit)
       currSlice->next_header = SOP;
 */
 //the
-    assert (nal_startcode_follows (img, inp, eos_bit) == TRUE);
+//    assert (nal_startcode_follows (img, inp, eos_bit) == TRUE);
     return TRUE;
   }
   // ask for last mb in the slice  UVLC
@@ -207,7 +207,7 @@ int exit_macroblock(struct img_par *img,struct inp_par *inp,int eos_bit)
 
     if (img->current_mb_nr == -1)     // End of Slice group, MUST be end of slice
     {
-      assert (nal_startcode_follows (img, inp, eos_bit) == TRUE);
+//      assert (nal_startcode_follows (img, inp, eos_bit) == TRUE);
       return TRUE;
     }
 

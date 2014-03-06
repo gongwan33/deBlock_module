@@ -1372,17 +1372,17 @@ void decode_one_slice(struct img_par *img,struct inp_par *inp)
     start_macroblock(img,inp, img->current_mb_nr);
     // Get the syntax elements from the NAL
     read_flag = read_one_macroblock(img,inp);	//++ 熵解码：包括解出宏块类型、预测模式、MVD、CBP、残差（包括反量化操作）等
-/*    decode_one_macroblock(img,inp);				//++ 反变换及运动补偿：反量化反变换、运动补偿、像素重构等
+   // decode_one_macroblock(img,inp);				//++ 反变换及运动补偿：反量化反变换、运动补偿、像素重构等
 
-    if(img->MbaffFrameFlag && dec_picture->mb_field[img->current_mb_nr])
+ /*   if(img->MbaffFrameFlag && dec_picture->mb_field[img->current_mb_nr])
     {
       img->num_ref_idx_l0_active >>= 1;
       img->num_ref_idx_l1_active >>= 1;
     }
+	*/
+    //ercWriteMBMODEandMV(img,inp);	//++ 写入各个8*8块的预测模式及运动向量到错误隐藏变量中
 
-    ercWriteMBMODEandMV(img,inp);	//++ 写入各个8*8块的预测模式及运动向量到错误隐藏变量中
-
-    end_of_slice=exit_macroblock(img,inp,(!img->MbaffFrameFlag||img->current_mb_nr%2));*/
+    end_of_slice=exit_macroblock(img,inp,(!img->MbaffFrameFlag||img->current_mb_nr%2));
   }
 
   //exit_slice();
