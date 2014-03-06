@@ -46,7 +46,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-
+#include <time.h>
 
 #include "global.h"
 #include "errorconcealment.h"
@@ -137,7 +137,7 @@ void MbAffPostProc()
  *
  ***********************************************************************
  */
-
+struct timeval t1, t2;
 int decode_one_frame(struct img_par *img,struct inp_par *inp, struct snr_par *snr)
 {
   int current_header;
@@ -151,11 +151,14 @@ int decode_one_frame(struct img_par *img,struct inp_par *inp, struct snr_par *sn
 
   while ((currSlice->next_header != EOS && currSlice->next_header != SOP))
   {
+  gettimeofday(&t1, NULL);
     current_header = read_new_slice();
+      gettimeofday(&t2, NULL);
+      printf("read_new_slice time = %d\n", t2.tv_usec - t1.tv_usec);
 
     if (current_header == EOS)
     {
-      exit_picture();
+  //    exit_picture();
       return EOS;
     }
 
@@ -1347,6 +1350,7 @@ int is_new_picture()
  *    decodes one slice
  ************************************************************************
  */
+struct timeval tv1, tv2;
 void decode_one_slice(struct img_par *img,struct inp_par *inp)
 {
 
@@ -1354,6 +1358,7 @@ void decode_one_slice(struct img_par *img,struct inp_par *inp)
   int read_flag;
   img->cod_counter=-1;
 
+    gettimeofday(&tv1, NULL);
   set_ref_pic_num();
 
   if (img->type == B_SLICE)
@@ -1384,12 +1389,13 @@ void decode_one_slice(struct img_par *img,struct inp_par *inp)
 
     end_of_slice=exit_macroblock(img,inp,(!img->MbaffFrameFlag||img->current_mb_nr%2));
   }
+	gettimeofday(&tv2);
+	printf("one_slice macro time = %d\n", tv2.tv_usec -tv1.tv_usec);
 
   //exit_slice();
   //reset_ec_flags();
 
 }
-
 
 void decode_slice(struct img_par *img,struct inp_par *inp, int current_header)
 {

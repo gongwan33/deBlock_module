@@ -120,10 +120,11 @@ int InterpretSPS (DataPartition *p, seq_parameter_set_rbsp_t *sps)
     sps->frame_cropping_rect_bottom_offset    = ue_v ("SPS: frame_cropping_rect_bottom_offset"         , s);
   }
   sps->vui_parameters_present_flag           = u_1  ("SPS: vui_parameters_present_flag"            , s);
-  if (sps->vui_parameters_present_flag)
+/*  if (sps->vui_parameters_present_flag)
   {
     printf ("VUI sequence parameters present but not supported, ignored, proceeding to next NALU\n");
   }
+  */
   sps->Valid = TRUE;
   return UsedBits;
 }
