@@ -1382,10 +1382,10 @@ void decode_one_slice(struct img_par *img,struct inp_par *inp)
 
     ercWriteMBMODEandMV(img,inp);	//++ 写入各个8*8块的预测模式及运动向量到错误隐藏变量中
 
-    end_of_slice=exit_macroblock(img,inp,(!img->MbaffFrameFlag||img->current_mb_nr%2));
+    end_of_slice=exit_macroblock(img,inp,(!img->MbaffFrameFlag||img->current_mb_nr%2));*/
   }
 
-  exit_slice();*/
+  //exit_slice();
   //reset_ec_flags();
 
 }
