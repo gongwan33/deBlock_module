@@ -165,7 +165,7 @@ int decode_one_frame(struct img_par *img,struct inp_par *inp, struct snr_par *sn
     img->current_slice_nr++;
   }
 
-  exit_picture();
+  //exit_picture();
 
   return (SOP);
 }
@@ -1372,7 +1372,7 @@ void decode_one_slice(struct img_par *img,struct inp_par *inp)
     start_macroblock(img,inp, img->current_mb_nr);
     // Get the syntax elements from the NAL
     read_flag = read_one_macroblock(img,inp);	//++ 熵解码：包括解出宏块类型、预测模式、MVD、CBP、残差（包括反量化操作）等
-    decode_one_macroblock(img,inp);				//++ 反变换及运动补偿：反量化反变换、运动补偿、像素重构等
+/*    decode_one_macroblock(img,inp);				//++ 反变换及运动补偿：反量化反变换、运动补偿、像素重构等
 
     if(img->MbaffFrameFlag && dec_picture->mb_field[img->current_mb_nr])
     {
@@ -1385,7 +1385,7 @@ void decode_one_slice(struct img_par *img,struct inp_par *inp)
     end_of_slice=exit_macroblock(img,inp,(!img->MbaffFrameFlag||img->current_mb_nr%2));
   }
 
-  exit_slice();
+  exit_slice();*/
   //reset_ec_flags();
 
 }

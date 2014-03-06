@@ -172,13 +172,13 @@ int main(int argc, char **argv)
 
   report(input, img, snr);
   free_slice(input,img);
-  FmoFinit();
+/*  FmoFinit();
   free_global_buffers();
 
-  flush_dpb();
+  flush_dpb();*/
 
 #ifdef PAIR_FIELDS_IN_OUTPUT
-  flush_pending_output(p_out);
+//  flush_pending_output(p_out);
 #endif
 
   CloseBitstreamFile();

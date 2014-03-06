@@ -748,7 +748,7 @@ int read_one_macroblock(struct img_par *img,struct inp_par *inp)
       }
     }
   }
-
+/*
   dec_picture->mb_field[img->current_mb_nr] = currMB->mb_field;
 
   img->siblock[img->mb_x][img->mb_y]=0;
@@ -938,7 +938,7 @@ int read_one_macroblock(struct img_par *img,struct inp_par *inp)
     // same category as MBTYPE
     dP = &(currSlice->partArr[partMap[SE_MBTYPE]]);
     readIPCMcoeffsFromNAL(img,inp,dP);
-  }
+  }*/
   return DECODE_MB;
 }
 
