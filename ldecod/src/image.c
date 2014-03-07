@@ -633,10 +633,12 @@ int read_new_slice()
 	    gettimeofday(&e2, NULL);
 	    printf("nalu FmoInit time = %d\n", e2.tv_usec - e1.tv_usec);
 
-	    gettimeofday(&f1, NULL);
         if(is_new_picture())
         {
+	      gettimeofday(&f1, NULL);
           init_picture(img, input);
+	      gettimeofday(&f2, NULL);
+	      printf("nalu picture part time = %d\n", f2.tv_usec - f1.tv_usec);
           
           current_header = SOP;
           //check zero_byte if it is also the first NAL unit in the access unit
@@ -647,8 +649,6 @@ int read_new_slice()
   
         init_lists(img->type, img->currentSlice->structure);
         reorder_lists (img->type, img->currentSlice);
-	    gettimeofday(&f2, NULL);
-	    printf("nalu picture part time = %d\n", f2.tv_usec - f1.tv_usec);
 
         if (img->structure==FRAME)
         {
