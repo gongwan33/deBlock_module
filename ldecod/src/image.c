@@ -527,6 +527,7 @@ void set_ref_pic_num()
  *    Reads new slice from bit_stream
  ************************************************************************
  */
+struct timeval m1, m2, s1, s2, l1, l2, c1, c2, d1, d2, e1, e2, f1, f2;
 int read_new_slice()
 {
   NALU_t *nalu = AllocNALU(MAX_CODED_FRAME_SIZE);
@@ -545,13 +546,17 @@ int read_new_slice()
 
   while (1)
   {
+	gettimeofday(&l1, NULL);
     ftell_position = ftell(bits);	//++ ftell()得到某文件指针的当前位置
 
     if (input->FileFormat == PAR_OF_ANNEXB)
       ret=GetAnnexbNALU (nalu);	//++ GetAnnexbNALU (nalu)返回的值是正在使用的NAL单元的长度（包括开始前缀码）
     else
       ret=GetRTPNALU (nalu);
+	gettimeofday(&l2, NULL);
+	printf("nalu read head analyze time = %d\n", l2.tv_usec - l1.tv_usec);
 
+	gettimeofday(&m1, NULL);
     //In some cases, zero_byte shall be present. If current NALU is a VCL NALU, we can't tell
     //whether it is the first VCL NALU at this point, so only non-VCL NAL unit is checked here.
     CheckZeroByteNonVCL(nalu, &ret);	//++ 该函数同时执行了对已解码的非VCL NAL单元计数
@@ -585,6 +590,9 @@ int read_new_slice()
     {
       case NALU_TYPE_SLICE:
       case NALU_TYPE_IDR:
+		printf("nal IDR or SLICE\n");
+	    gettimeofday(&s1, NULL);
+
         img->idr_flag = (nalu->nal_unit_type == NALU_TYPE_IDR);
         img->nal_reference_idc = nalu->nal_reference_idc;
         img->disposable_flag = (nalu->nal_reference_idc == NALU_PRIORITY_DISPOSABLE);
@@ -598,9 +606,13 @@ int read_new_slice()
 									//++		:if(!dP->bitstream->ei_flag)		:currMB->ei_flag = 0;
 									//++ 该值还在macroblock.c文件if(IS_INTRA (currMB) && dP->bitstream->ei_flag && img->number)中用到
         currStream->frame_bitoffset = currStream->read_len = 0;
+	    gettimeofday(&c1, NULL);
         memcpy (currStream->streamBuffer, &nalu->buf[1], nalu->len-1);
         currStream->code_len = currStream->bitstream_length = RBSPtoSODB(currStream->streamBuffer, nalu->len-1);
+	    gettimeofday(&c2, NULL);
+	    printf("nalu slice memcpy time = %d\n", c2.tv_usec - c1.tv_usec);
 
+	    gettimeofday(&d1, NULL);
         // Some syntax of the Slice Header depends on the parameter set, which depends on
         // the parameter set ID of the SLice header.  Hence, read the pic_parameter_set_id
         // of the slice header first, then setup the active parameter sets, and then read
@@ -612,9 +624,16 @@ int read_new_slice()
 		//++ 重复计算了FirstPartOfSliceHeader()所用到的比特数。因为在FirstPartOfSliceHeader()
 		//++ 之后，变量UsedBits值并未被置零就代入RestOfSliceHeader()运算，从而RestOfSliceHeader ()
 		//++ 在返回时，BitsUsedByHeader+= RestOfSliceHeader()多加了一个BitsUsedByHeader值
+	    gettimeofday(&d2, NULL);
+	    printf("nalu decode part1 time = %d\n", d2.tv_usec - d1.tv_usec);
 
+
+	    gettimeofday(&e1, NULL);
         FmoInit (active_pps, active_sps);
+	    gettimeofday(&e2, NULL);
+	    printf("nalu FmoInit time = %d\n", e2.tv_usec - e1.tv_usec);
 
+	    gettimeofday(&f1, NULL);
         if(is_new_picture())
         {
           init_picture(img, input);
@@ -628,6 +647,8 @@ int read_new_slice()
   
         init_lists(img->type, img->currentSlice->structure);
         reorder_lists (img->type, img->currentSlice);
+	    gettimeofday(&f2, NULL);
+	    printf("nalu picture part time = %d\n", f2.tv_usec - f1.tv_usec);
 
         if (img->structure==FRAME)
         {
@@ -651,6 +672,7 @@ int read_new_slice()
 
         if (active_pps->entropy_coding_mode_flag)
         {
+		  printf("Entropy coding mode!\n");
           int ByteStartPosition = currStream->frame_bitoffset/8;
           if (currStream->frame_bitoffset%8 != 0) 
           {
@@ -660,6 +682,9 @@ int read_new_slice()
         }
 // printf ("read_new_slice: returning %s\n", current_header == SOP?"SOP":"SOS");
         FreeNALU(nalu);
+	    gettimeofday(&s2, NULL);
+	    printf("nalu slice head analyze time = %d\n", s2.tv_usec - s1.tv_usec);
+
         return current_header;
         break;
       case NALU_TYPE_DPA:
@@ -681,6 +706,7 @@ int read_new_slice()
             LC: inserting the code related to DP processing, mainly copying some of the parts
             related to NALU_TYPE_SLICE, NALU_TYPE_IDR.
         */
+		printf("nal DPA\n");
 
         if(expected_slice_type != NALU_TYPE_DPA)
         {
@@ -753,6 +779,7 @@ int read_new_slice()
         break;
       case NALU_TYPE_DPB:
         /* LC: inserting the code related to DP processing */
+		printf("nal DPB\n");
 
         currStream             = currSlice->partArr[1].bitstream;
         currStream->ei_flag    = 0;
@@ -786,6 +813,8 @@ int read_new_slice()
         break;
       case NALU_TYPE_DPC:
         /* LC: inserting the code related to DP processing */
+		printf("nal DPC\n");
+
         currStream             = currSlice->partArr[2].bitstream;
         currStream->ei_flag    = 0;
         currStream->frame_bitoffset = currStream->read_len = 0;
@@ -817,32 +846,42 @@ int read_new_slice()
 
         break;
       case NALU_TYPE_SEI:
+		printf("nal SEI\n");
         printf ("read_new_slice: Found NALU_TYPE_SEI, len %d\n", nalu->len);
         InterpretSEIMessage(nalu->buf,nalu->len,img);
         break;
       case NALU_TYPE_PPS:
+		printf("nal PPS\n");
         ProcessPPS(nalu);
         break;
 
       case NALU_TYPE_SPS:
+		printf("nal SPS\n");
         ProcessSPS(nalu);
         break;
       case NALU_TYPE_AUD:
+		printf("nal AUD\n");
 //        printf ("read_new_slice: Found 'Access Unit Delimiter' NAL unit, len %d, ignored\n", nalu->len);
         break;
       case NALU_TYPE_EOSEQ:
+		printf("nal EOSEQ\n");
 //        printf ("read_new_slice: Found 'End of Sequence' NAL unit, len %d, ignored\n", nalu->len);
         break;
       case NALU_TYPE_EOSTREAM:
+		printf("nal EOSTREAM\n");
 //        printf ("read_new_slice: Found 'End of Stream' NAL unit, len %d, ignored\n", nalu->len);
         break;
       case NALU_TYPE_FILL:
+		printf("nal FILL\n");
         printf ("read_new_slice: Found NALU_TYPE_FILL, len %d\n", nalu->len);
         printf ("Skipping these filling bits, proceeding w/ next NALU\n");
         break;
       default:
+		printf("nal default\n");
         printf ("Found NALU type %d, len %d undefined, ignore NALU, moving on\n", nalu->nal_unit_type, nalu->len);
     }
+	gettimeofday(&m2, NULL);
+	printf("nalu head analyze time = %d\n", m2.tv_usec - m1.tv_usec);
   }
   FreeNALU(nalu);
 

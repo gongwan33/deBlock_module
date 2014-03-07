@@ -170,7 +170,7 @@ int main(int argc, char **argv)
   while (decode_one_frame(img, input, snr) != EOS)
     ;
 
-  report(input, img, snr);
+//  report(input, img, snr);
   free_slice(input,img);
 /*  FmoFinit();
   free_global_buffers();
