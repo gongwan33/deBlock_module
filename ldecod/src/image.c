@@ -895,9 +895,11 @@ int read_new_slice()
  *    Initializes the parameters for a new picture
  ************************************************************************
  */
+struct timeval inp1, inp2, inp3, inp4;
 void init_picture(struct img_par *img, struct inp_par *inp)
 {
   int i,k,l;
+  gettimeofday(&inp1, NULL);
   if (dec_picture)
   {
     // this may only happen on slice loss
@@ -971,7 +973,11 @@ void init_picture(struct img_par *img, struct inp_par *inp)
     set_ec_flag(SE_PTYPE);
     img->type = P_SLICE;  // concealed element
   }
+  gettimeofday(&inp2, NULL);
+  printf("init_picture p1: %d\n", inp2.tv_usec - inp1.tv_usec);
 
+  
+  gettimeofday(&inp3, NULL);
   // CAVLC init
   for (i=0;i < (int)img->PicSizeInMbs; i++)
     for (k=0;k<4;k++)	//++ 代表每个8*8块分为四个4*4的块
@@ -993,6 +999,8 @@ void init_picture(struct img_par *img, struct inp_par *inp)
     img->mb_data[i].slice_nr = -1; 
     img->mb_data[i].ei_flag = 1;
   }
+  gettimeofday(&inp4, NULL);
+  printf("init_picture p2: %d\n", inp4.tv_usec - inp3.tv_usec);
 
   img->mb_y = img->mb_x = 0;
   img->block_y = img->pix_y = img->pix_c_y = 0; // define vertical positions
