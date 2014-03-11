@@ -647,8 +647,8 @@ int read_new_slice()
         else
           current_header = SOS;
   
-        init_lists(img->type, img->currentSlice->structure);
-        reorder_lists (img->type, img->currentSlice);
+    //    init_lists(img->type, img->currentSlice->structure);
+        //reorder_lists (img->type, img->currentSlice);
 
         if (img->structure==FRAME)
         {
@@ -899,12 +899,13 @@ struct timeval inp1, inp2, inp3, inp4;
 void init_picture(struct img_par *img, struct inp_par *inp)
 {
   int i,k,l;
-  gettimeofday(&inp1, NULL);
+ 
   if (dec_picture)
   {
     // this may only happen on slice loss
     exit_picture();
   }
+  
 
   if (img->frame_num != img->pre_frame_num && img->frame_num != (img->pre_frame_num + 1) % img->MaxFrameNum) 
   {
@@ -933,16 +934,17 @@ void init_picture(struct img_par *img, struct inp_par *inp)
   }
 
   dec_picture = alloc_storable_picture (img->structure, img->width, img->height, img->width_cr, img->height_cr);
-  dec_picture->top_poc=img->toppoc;
-  dec_picture->bottom_poc=img->bottompoc;
-  dec_picture->frame_poc=img->framepoc;
+  //dec_picture->top_poc=img->toppoc;
+  //dec_picture->bottom_poc=img->bottompoc;
+  //dec_picture->frame_poc=img->framepoc;
 
   // reset all variables of the error concealment instance before decoding of every frame.
   // here the third parameter should, if perfectly, be equal to the number of slices per frame.
   // using little value is ok, the code will allocate more memory if the slice number is larger
-  ercReset(erc_errorVar, img->PicSizeInMbs, img->PicSizeInMbs, dec_picture->size_x);
-  erc_mvperMB = 0;
+  //ercReset(erc_errorVar, img->PicSizeInMbs, img->PicSizeInMbs, dec_picture->size_x);
+  //erc_mvperMB = 0;
 
+  /*
   switch (img->structure )
   {
   case TOP_FIELD:
@@ -965,9 +967,11 @@ void init_picture(struct img_par *img, struct inp_par *inp)
   default:
     error("img->structure not initialized", 235);
   }
-
+*/
   img->current_slice_nr=0;
 
+  /*
+  gettimeofday(&inp1, NULL);
   if (img->type > SI_SLICE)
   {
     set_ec_flag(SE_PTYPE);
@@ -975,6 +979,7 @@ void init_picture(struct img_par *img, struct inp_par *inp)
   }
   gettimeofday(&inp2, NULL);
   printf("init_picture p1: %d\n", inp2.tv_usec - inp1.tv_usec);
+  */
 
   
   gettimeofday(&inp3, NULL);
@@ -1059,7 +1064,7 @@ void exit_picture()
   }
 
   //deblocking for frame or field
-
+/*
   DeblockPicture( img, dec_picture );
 
   if (dec_picture->MbaffFrameFlag)
@@ -1129,7 +1134,7 @@ void exit_picture()
   {
     img->pre_frame_num = 0;
   }
-
+*/
   if ((structure==FRAME)||structure==BOTTOM_FIELD)
   {
     
