@@ -52,7 +52,7 @@
 #endif
 
 extern void tracebits(const char *trace_str,  int len,  int info,int value1);
-
+extern int count_i;
 
 int UsedBits;      // for internal statistics, is adjusted by se_v, ue_v, u_1
 
@@ -380,6 +380,28 @@ int readSyntaxElement_VLC(SyntaxElement *sym, Bitstream *currStream)
   return 1;
 }
 
+int readSyntaxElement_VLC_Simp(SyntaxElement *sym, Bitstream *currStream)
+{
+  int frame_bitoffset = currStream->frame_bitoffset;
+  byte *buf = currStream->streamBuffer;
+  int BitstreamLengthInBytes = currStream->bitstream_length;
+
+  sym->len =  GetVLCSymbol_Simp (buf, frame_bitoffset, &(sym->inf), BitstreamLengthInBytes);	//++ 该处主要是获得哥伦布编码的标志比特位（从后继的码流中第一个比特位开始逐个检查）。
+  if (sym->len == -1)
+    return -1;
+  currStream->frame_bitoffset += sym->len;
+//  sym->mapping(sym->len,sym->inf,&(sym->value1),&(sym->value2));
+
+#if TRACE
+  tracebits(sym->tracestring, sym->len, sym->inf, sym->value1);
+#endif
+
+#if DEBUG 
+  printf("vlc len = %d\n", sym->len);
+#endif
+  return 1;
+}
+
 
 /*!
  ************************************************************************
@@ -394,6 +416,14 @@ int readSyntaxElement_UVLC(SyntaxElement *sym, struct img_par *img, struct inp_p
 
   return (readSyntaxElement_VLC(sym, currStream));
 }
+
+int readSyntaxElement_UVLC_Simp(SyntaxElement *sym, struct img_par *img, struct inp_par *inp, struct datapartition *dP)
+{
+  Bitstream   *currStream = dP->bitstream;
+
+  return (readSyntaxElement_VLC_Simp(sym, currStream));
+}
+
 
 /*!
  ************************************************************************
@@ -612,6 +642,60 @@ int GetVLCSymbol (byte buffer[],int totbitoffset,int *info, int bytecount)
   }
 
   *info = inf;
+  return bitcounter;           // return absolute offset in bit from start of frame
+}
+
+int GetVLCSymbol_Simp (byte buffer[],int totbitoffset,int *info, int bytecount)
+{
+
+  register int inf;
+  long byteoffset;      // byte from start of buffer
+  int bitoffset;      // bit from start of byte
+  int ctr_bit=0;      // control bit for current bit posision
+  int bitcounter=1;
+  int len;
+  int info_bit;
+
+  byteoffset= totbitoffset/8;
+  bitoffset= 7-(totbitoffset%8);
+  ctr_bit = (buffer[byteoffset] & (0x01<<bitoffset));   // set up control bit
+
+  len=1;
+  while (ctr_bit==0)
+  {                 // find leading 1 bit
+    len++;
+    bitoffset-=1;           
+    bitcounter++;
+    if (bitoffset<0)
+    {                 // finish with current byte ?
+      bitoffset=bitoffset+8;
+      byteoffset++;
+    }
+    ctr_bit=buffer[byteoffset] & (0x01<<(bitoffset));
+  }
+    // make infoword
+  
+  inf=0;      // shortest possible code is 1, then info is always 0
+  bitcounter += len-1;
+ /* for(info_bit=0;(info_bit<(len-1)); info_bit++)
+  {
+    bitcounter++;
+    bitoffset-=1;
+    if (bitoffset<0)
+    {                 // finished with current byte ?
+      bitoffset=bitoffset+8;
+      byteoffset++;
+    }
+    if (byteoffset > bytecount)
+    {
+      return -1;
+    }
+    inf=(inf<<1);
+    if(buffer[byteoffset] & (0x01<<(bitoffset)))
+      inf |=1;
+  }
+
+  *info = inf;*/
   return bitcounter;           // return absolute offset in bit from start of frame
 }
 
@@ -1072,7 +1156,7 @@ int readSyntaxElement_TotalZeros(SyntaxElement *sym,  DataPartition *dP)
 
   if (retval)
   {
-    printf("ERROR: failed to find Total Zeros\n");
+    printf("ERROR: failed to find Total Zeros TTZ %d\n", count_i);
     exit(-1);
   }
 
@@ -1119,7 +1203,7 @@ int readSyntaxElement_TotalZerosChromaDC(SyntaxElement *sym,  DataPartition *dP)
 
   if (retval)
   {
-    printf("ERROR: failed to find Total Zeros\n");
+    printf("ERROR: failed to find Total Zeros TZDC %d\n", count_i);
     exit(-1);
   }
 

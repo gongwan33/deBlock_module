@@ -38,6 +38,7 @@
  *    - Alexis Tourapis                 <alexismt@ieee.org>
  ***********************************************************************
  */
+#define PRINT 0
 
 #include "contributors.h"
 
@@ -137,7 +138,10 @@ void MbAffPostProc()
  *
  ***********************************************************************
  */
+
+extern FILE *fp_test;
 struct timeval t1, t2;
+int count_i = 0;
 int decode_one_frame(struct img_par *img,struct inp_par *inp, struct snr_par *snr)
 {
   int current_header;
@@ -151,14 +155,17 @@ int decode_one_frame(struct img_par *img,struct inp_par *inp, struct snr_par *sn
 
   while ((currSlice->next_header != EOS && currSlice->next_header != SOP))
   {
+  count_i++;printf("count i = %d\n", count_i);
   gettimeofday(&t1, NULL);
     current_header = read_new_slice();
       gettimeofday(&t2, NULL);
+#if PRINT
       printf("read_new_slice time = %d\n", t2.tv_usec - t1.tv_usec);
+#endif
 
     if (current_header == EOS)
     {
-  //    exit_picture();
+      exit_picture();
       return EOS;
     }
 
@@ -168,7 +175,7 @@ int decode_one_frame(struct img_par *img,struct inp_par *inp, struct snr_par *sn
     img->current_slice_nr++;
   }
 
-  //exit_picture();
+  exit_picture();
 
   return (SOP);
 }
@@ -554,14 +561,17 @@ int read_new_slice()
     else
       ret=GetRTPNALU (nalu);
 	gettimeofday(&l2, NULL);
+#if PRINT
 	printf("nalu read head analyze time = %d\n", l2.tv_usec - l1.tv_usec);
-
+#endif
 	gettimeofday(&m1, NULL);
     //In some cases, zero_byte shall be present. If current NALU is a VCL NALU, we can't tell
     //whether it is the first VCL NALU at this point, so only non-VCL NAL unit is checked here.
     CheckZeroByteNonVCL(nalu, &ret);	//++ 该函数同时执行了对已解码的非VCL NAL单元计数
 
     NALUtoRBSP(nalu);	//++ 剔除比特流中的仿校验字节（0X03）
+    
+//	printf("0x%x 0x%x\n", nalu->buf[1], nalu->buf[2]);
 //    printf ("nalu->len %d\n", nalu->len);
     
     if (ret < 0)
@@ -585,12 +595,20 @@ int read_new_slice()
     {
       printf ("Found NALU w/ forbidden_bit set, bit error?  Let's try...\n");
     }
+	
+    if(nalu->nal_unit_type ==  NALU_TYPE_SPS
+		||nalu->nal_unit_type ==  NALU_TYPE_PPS)
+	    fwrite(&nalu->buf[0], nalu->len, 1, fp_test);
+	else
+		fwrite(&nalu->buf[0], 1, 1, fp_test);
 
     switch (nalu->nal_unit_type)
     {
       case NALU_TYPE_SLICE:
       case NALU_TYPE_IDR:
+#if PRINT
 		printf("nal IDR or SLICE\n");
+#endif
 	    gettimeofday(&s1, NULL);
 
         img->idr_flag = (nalu->nal_unit_type == NALU_TYPE_IDR);
@@ -601,17 +619,27 @@ int read_new_slice()
         currSlice->ei_flag = 0;	//++ 该处赋值直接影响decode_slice()函数中对decode_one_slice()函数的调用
 									//++ 该值不为0，表明当前片出错，解码程序将忽略当前片的解码过程，而使用错误隐藏
         currStream = currSlice->partArr[0].bitstream;
+//the patArr is for different slice part like DPA,DPB,DPC, and the number in [ ] is decided
+//by partmap array. For more, please see read_one_marcoblock function
         currStream->ei_flag = 0;	//++ 此处的赋值为最终赋值，以后不再改变。该值将对每个宏块的ei_flag产生影响
 									//++ 参见macroblock.c文件read_one_macroblock()函数的如下语句：
 									//++		:if(!dP->bitstream->ei_flag)		:currMB->ei_flag = 0;
 									//++ 该值还在macroblock.c文件if(IS_INTRA (currMB) && dP->bitstream->ei_flag && img->number)中用到
         currStream->frame_bitoffset = currStream->read_len = 0;
 	    gettimeofday(&c1, NULL);
+		
+//		printf("0x%x 0x%x\n", currSlice->partArr[0].bitstream->streamBuffer[0],
+//			                       currSlice->partArr[2].bitstream->streamBuffer[0]);
         memcpy (currStream->streamBuffer, &nalu->buf[1], nalu->len-1);
+//		printf("0x%x 0x%x 0x%x\n", currSlice->partArr[0].bitstream->streamBuffer[0],
+//			                       currSlice->partArr[2].bitstream->streamBuffer[0],
+//			                       currSlice->partArr[4].bitstream->streamBuffer[0]);
+//		printf("0x%x 0x%x\n", nalu->buf[1], nalu->buf[2]);
         currStream->code_len = currStream->bitstream_length = RBSPtoSODB(currStream->streamBuffer, nalu->len-1);
 	    gettimeofday(&c2, NULL);
+#if PRINT
 	    printf("nalu slice memcpy time = %d\n", c2.tv_usec - c1.tv_usec);
-
+#endif
 	    gettimeofday(&d1, NULL);
         // Some syntax of the Slice Header depends on the parameter set, which depends on
         // the parameter set ID of the SLice header.  Hence, read the pic_parameter_set_id
@@ -625,21 +653,25 @@ int read_new_slice()
 		//++ 之后，变量UsedBits值并未被置零就代入RestOfSliceHeader()运算，从而RestOfSliceHeader ()
 		//++ 在返回时，BitsUsedByHeader+= RestOfSliceHeader()多加了一个BitsUsedByHeader值
 	    gettimeofday(&d2, NULL);
+#if PRINT
 	    printf("nalu decode part1 time = %d\n", d2.tv_usec - d1.tv_usec);
-
+#endif
 
 	    gettimeofday(&e1, NULL);
         FmoInit (active_pps, active_sps);
 	    gettimeofday(&e2, NULL);
+#if PRINT
 	    printf("nalu FmoInit time = %d\n", e2.tv_usec - e1.tv_usec);
+#endif
 
         if(is_new_picture())
         {
 	      gettimeofday(&f1, NULL);
           init_picture(img, input);
 	      gettimeofday(&f2, NULL);
+#if PRINT
 	      printf("nalu picture part time = %d\n", f2.tv_usec - f1.tv_usec);
-          
+#endif          
           current_header = SOP;
           //check zero_byte if it is also the first NAL unit in the access unit
           CheckZeroByteVCL(nalu, &ret);
@@ -683,8 +715,12 @@ int read_new_slice()
 // printf ("read_new_slice: returning %s\n", current_header == SOP?"SOP":"SOS");
         FreeNALU(nalu);
 	    gettimeofday(&s2, NULL);
+#if PRINT
 	    printf("nalu slice head analyze time = %d\n", s2.tv_usec - s1.tv_usec);
-
+#endif
+        fwrite(currStream->streamBuffer, (currStream->frame_bitoffset%8 == 0?
+                                         currStream->frame_bitoffset/8:
+                                         (currStream->frame_bitoffset/8 + 1)), 1, fp_test);
         return current_header;
         break;
       case NALU_TYPE_DPA:
@@ -851,12 +887,16 @@ int read_new_slice()
         InterpretSEIMessage(nalu->buf,nalu->len,img);
         break;
       case NALU_TYPE_PPS:
+#if PRINT
 		printf("nal PPS\n");
+#endif
         ProcessPPS(nalu);
         break;
 
       case NALU_TYPE_SPS:
+#if PRINT
 		printf("nal SPS\n");
+#endif
         ProcessSPS(nalu);
         break;
       case NALU_TYPE_AUD:
@@ -881,7 +921,9 @@ int read_new_slice()
         printf ("Found NALU type %d, len %d undefined, ignore NALU, moving on\n", nalu->nal_unit_type, nalu->len);
     }
 	gettimeofday(&m2, NULL);
+#if PRINT
 	printf("nalu head analyze time = %d\n", m2.tv_usec - m1.tv_usec);
+#endif
   }
   FreeNALU(nalu);
 
@@ -1005,7 +1047,9 @@ void init_picture(struct img_par *img, struct inp_par *inp)
     img->mb_data[i].ei_flag = 1;
   }
   gettimeofday(&inp4, NULL);
+ #if PRINT
   printf("init_picture p2: %d\n", inp4.tv_usec - inp3.tv_usec);
+ #endif
 
   img->mb_y = img->mb_x = 0;
   img->block_y = img->pix_y = img->pix_c_y = 0; // define vertical positions
@@ -1135,6 +1179,9 @@ void exit_picture()
     img->pre_frame_num = 0;
   }
 */
+  free(dec_picture);
+  dec_picture = NULL;
+  
   if ((structure==FRAME)||structure==BOTTOM_FIELD)
   {
     
@@ -1403,6 +1450,8 @@ int is_new_picture()
  ************************************************************************
  */
 struct timeval tv1, tv2;
+int start_offset;
+int end_offset;
 void decode_one_slice(struct img_par *img,struct inp_par *inp)
 {
 
@@ -1417,7 +1466,7 @@ void decode_one_slice(struct img_par *img,struct inp_par *inp)
       compute_collocated(Co_located, listX);	//++ 为直接预测模式做一些准备工作：获取co_located图像、计算mv_scale
 
   //reset_ec_flags();
-
+  start_offset = img->currentSlice->partArr[0].bitstream->frame_bitoffset;
   while (end_of_slice == FALSE) // loop over macroblocks
   {
 
@@ -1428,7 +1477,23 @@ void decode_one_slice(struct img_par *img,struct inp_par *inp)
     // Initializes the current macroblock
     start_macroblock(img,inp, img->current_mb_nr);
     // Get the syntax elements from the NAL
+
+    int temp_offset = img->currentSlice->partArr[0].bitstream->frame_bitoffset;
     read_flag = read_one_macroblock(img,inp);	//++ 熵解码：包括解出宏块类型、预测模式、MVD、CBP、残差（包括反量化操作）等
+    int temp_offset2 = img->currentSlice->partArr[0].bitstream->frame_bitoffset;
+	int mb_usedbits = temp_offset2 - temp_offset;
+
+	if((temp_offset2 - start_offset)%8 == 0 && temp_offset2%8 == 0)
+	{
+//	    printf("write start_offset = %d \n", start_offset);
+	    fwrite(img->currentSlice->partArr[0].bitstream->streamBuffer + (start_offset%8 == 0 ? start_offset/8:(start_offset/8+1)),
+	      (temp_offset2 - start_offset)/8,
+	       1, fp_test);
+		start_offset = temp_offset2;
+	}
+//	printf("used bits = %d offset = %d len = %d\n", mb_usedbits, temp_offset%8 == 0?temp_offset/8:temp_offset/8+1,
+//		img->currentSlice->partArr[0].bitstream->bitstream_length);
+
    // decode_one_macroblock(img,inp);				//++ 反变换及运动补偿：反量化反变换、运动补偿、像素重构等
 
  /*   if(img->MbaffFrameFlag && dec_picture->mb_field[img->current_mb_nr])
@@ -1442,8 +1507,43 @@ void decode_one_slice(struct img_par *img,struct inp_par *inp)
     end_of_slice=exit_macroblock(img,inp,(!img->MbaffFrameFlag||img->current_mb_nr%2));
   }
 	gettimeofday(&tv2);
+#if PRINT
 	printf("one_slice macro time = %d\n", tv2.tv_usec -tv1.tv_usec);
+#endif
 
+  
+  fwrite(img->currentSlice->partArr[0].bitstream->streamBuffer + (start_offset%8 == 0 ? start_offset/8:(start_offset/8+1)),
+	  img->currentSlice->partArr[0].bitstream->bitstream_length - (start_offset%8 == 0 ? start_offset/8:(start_offset/8+1)) - 1,
+	 1, fp_test);
+  int tail_1 = 0;
+  int len = img->currentSlice->partArr[0].bitstream->bitstream_length;
+  char mask = 0x01;
+  char tail[1];
+  tail[0] = 0x80;
+  while(!tail_1)
+  {
+      if(img->currentSlice->partArr[0].bitstream->streamBuffer[len - 1]
+	  	& 0x01)
+      {
+		  fwrite(img->currentSlice->partArr[0].bitstream->streamBuffer + len - 1,
+			 1,
+			 1, fp_test);
+		  fwrite(tail, 1, 1, fp_test);
+		  break;
+      }
+	  
+      if(img->currentSlice->partArr[0].bitstream->streamBuffer[len - 1]
+	  	& mask)
+      {
+		  img->currentSlice->partArr[0].bitstream->streamBuffer[len - 1] |= (mask>>1);
+		  fwrite(img->currentSlice->partArr[0].bitstream->streamBuffer + len -1,
+			 1,
+			 1, fp_test);
+		  break;
+	  }
+
+	  mask = mask<<1;
+  }
   //exit_slice();
   //reset_ec_flags();
 

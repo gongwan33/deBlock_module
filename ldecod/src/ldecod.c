@@ -106,12 +106,14 @@ struct img_par    *img;         //!< image parameters
 
 int global_init_done = 0;
 
+
 /*!
  ***********************************************************************
  * \brief
  *    main function for TML decoder
  ***********************************************************************
  */
+FILE *fp_test;
 int main(int argc, char **argv)
 {
     // allocate memory for the structures
@@ -167,8 +169,11 @@ int main(int argc, char **argv)
 
   // time for total decoding session
   tot_time = 0;
+  fp_test = fopen("testfile.264", "w+");
   while (decode_one_frame(img, input, snr) != EOS)
-    ;
+  	;
+
+  fclose(fp_test);
 
 //  report(input, img, snr);
   free_slice(input,img);

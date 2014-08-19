@@ -653,6 +653,24 @@ void getLuma4x4Neighbour (int curr_mb_nr, int block_x, int block_y, int rel_x, i
   }
 }
 
+void getLuma4x4Neighbour_Simp (int curr_mb_nr, int block_x, int block_y, int rel_x, int rel_y, PixelPos *pix)
+{
+  int x = 4* block_x + rel_x;
+  int y = 4* block_y + rel_y;
+
+  getNeighbour(curr_mb_nr, x, y, 1, pix);
+/*
+  if (pix->available)
+  {
+    pix->x /= 4;
+    pix->y /= 4;
+    pix->pos_x /= 4;
+    pix->pos_y /= 4;
+  }
+  */
+}
+
+
 
 /*!
  ************************************************************************

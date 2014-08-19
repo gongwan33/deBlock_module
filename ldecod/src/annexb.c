@@ -45,7 +45,8 @@ int IsFirstByteStreamNALU=1;
 int LastAccessUnitExists=0;
 int NALUCount=0;
 
-
+extern FILE *fp_test; //for file
+int tailingbits = 0; //for file
 /*!
  ************************************************************************
  * \brief
@@ -136,7 +137,7 @@ int GetAnnexbNALU (NALU_t *nalu)
         TrailingZero8Bits++;
       nalu->len = (pos-1)-nalu->startcodeprefix_len-LeadingZero8BitsCount-TrailingZero8Bits;
       memcpy (nalu->buf, &Buf[LeadingZero8BitsCount+nalu->startcodeprefix_len], nalu->len);     
-      nalu->forbidden_bit = (nalu->buf[0]>>7) & 1;
+	  nalu->forbidden_bit = (nalu->buf[0]>>7) & 1;
       nalu->nal_reference_idc = (nalu->buf[0]>>5) & 3;
       nalu->nal_unit_type = (nalu->buf[0]) & 0x1f;
 
@@ -149,7 +150,8 @@ int GetAnnexbNALU (NALU_t *nalu)
   fflush (p_trace);
 #endif
       free(Buf);
-      return pos-1;
+      return 0;
+      //return pos-1;
     }
     Buf[pos++] = fgetc (bits);
     info3 = FindStartCode(&Buf[pos-4], 3);	//++ info3=1表示找到的下一个NALU的开始码前有8比特填零码（00000001）
@@ -189,6 +191,8 @@ int GetAnnexbNALU (NALU_t *nalu)
 
   nalu->len = (pos+rewind)-nalu->startcodeprefix_len-LeadingZero8BitsCount-TrailingZero8Bits;
   memcpy (nalu->buf, &Buf[LeadingZero8BitsCount+nalu->startcodeprefix_len], nalu->len);
+  fwrite(&Buf[0], nalu->startcodeprefix_len + LeadingZero8BitsCount, 1, fp_test);
+  tailingbits = TrailingZero8Bits;
   nalu->forbidden_bit = (nalu->buf[0]>>7) & 1;		//+++++++++++++++++++++++++++
   nalu->nal_reference_idc = (nalu->buf[0]>>5) & 3;	//++ 该三值定义参见标准7.4.1
   nalu->nal_unit_type = (nalu->buf[0]) & 0x1f;		//+++++++++++++++++++++++++++

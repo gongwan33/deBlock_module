@@ -51,6 +51,8 @@
 #define SYMTRACESTRING(s) // do nothing
 #endif
 
+extern FILE *fp_test;
+
 extern int UsedBits;      // for internal statistics, is adjusted by se_v, ue_v, u_1
 extern ColocatedParams *Co_located;
 
@@ -246,7 +248,6 @@ void MakeSPSavailable (int id, seq_parameter_set_rbsp_t *sps)
   memcpy (&SeqParSet[id], sps, sizeof (seq_parameter_set_rbsp_t));
 }
 
-
 void ProcessSPS (NALU_t *nalu)
 {
   DataPartition *dp = AllocPartition(1);
@@ -276,7 +277,6 @@ void ProcessSPS (NALU_t *nalu)
   }
   // SPSConsistencyCheck (pps);
   MakeSPSavailable (sps->seq_parameter_set_id, sps);
-
   FreePartition (dp, 1);
   FreeSPS (sps);
 }
@@ -309,7 +309,7 @@ void ProcessPPS (NALU_t *nalu)
       }
     }
   }
-  MakePPSavailable (pps->pic_parameter_set_id, pps);
+  MakePPSavailable (pps->pic_parameter_set_id, pps);  
   FreePartition (dp, 1);
   FreePPS (pps);
 }

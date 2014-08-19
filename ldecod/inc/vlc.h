@@ -49,6 +49,7 @@ void linfo_levrun_c2x2(int len,int info,int *level,int *irun);
 
 int  readSyntaxElement_VLC (SyntaxElement *sym, Bitstream *currStream);
 int  readSyntaxElement_UVLC(SyntaxElement *sym, struct img_par *img, struct inp_par *inp, struct datapartition *dp);
+int  readSyntaxElement_UVLC_Simp(SyntaxElement *sym, struct img_par *img, struct inp_par *inp, struct datapartition *dp);
 int  readSyntaxElement_Intra4x4PredictionMode(SyntaxElement *sym, struct img_par *img, struct inp_par *inp, struct datapartition *dp);
 
 int  GetVLCSymbol (byte buffer[],int totbitoffset,int *info, int bytecount);

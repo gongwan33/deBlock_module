@@ -557,7 +557,7 @@ int read_one_macroblock(struct img_par *img,struct inp_par *inp)
   int  prevMbSkipped = 0;
   int  img_block_y;
   int  check_bottom, read_bottom, read_top;
-  
+  /*
   if (img->MbaffFrameFlag)
   {
     if (img->current_mb_nr%2)
@@ -570,7 +570,7 @@ int read_one_macroblock(struct img_par *img,struct inp_par *inp)
     }
     else 
       prevMbSkipped = 0;
-  }
+  }*/
   
   if (img->current_mb_nr%2 == 0)
     currMB->mb_field = 0;
@@ -584,7 +584,9 @@ int read_one_macroblock(struct img_par *img,struct inp_par *inp)
 
   //  read MB mode *****************************************************************
   dP = &(currSlice->partArr[partMap[currSE.type]]);	//++ 对currSlice->partArr分配内存空间在decod.c文件malloc_slice()函数最后一行
-													//++ 对其赋值是在image.c文件read_new_slice()函数while循环的switch语句中
+     												//++ 对其赋值是在image.c文件read_new_slice()函数while循环的switch语句中
+//  printf("%d %d\n", SE_MBTYPE, img->currentSlice->partArr[2].bitstream->streamBuffer[0]);
+
   if (active_pps->entropy_coding_mode_flag == UVLC || dP->bitstream->ei_flag)   currSE.mapping = linfo_ue;
 
   if(img->type == I_SLICE || img->type == SI_SLICE)
@@ -617,7 +619,7 @@ int read_one_macroblock(struct img_par *img,struct inp_par *inp)
     if(!dP->bitstream->ei_flag)
       currMB->ei_flag = 0;
   }
-
+/*
   // non I/SI-slice CABAC
   else if (active_pps->entropy_coding_mode_flag == CABAC)
   {
@@ -680,7 +682,7 @@ int read_one_macroblock(struct img_par *img,struct inp_par *inp)
         currMB->ei_flag = 0;
     }
   }
-  // VLC Non-Intra
+*/  // VLC Non-Intra
   else
   {
     if(img->cod_counter == -1)
@@ -748,10 +750,12 @@ int read_one_macroblock(struct img_par *img,struct inp_par *inp)
       }
     }
   }
-/*
-  dec_picture->mb_field[img->current_mb_nr] = currMB->mb_field;
+//if(currMB->mb_type == 24)printf("mb type %d\n", currMB->mb_type);
+#define ALLREAD 1
+#if ALLREAD
+//  dec_picture->mb_field[img->current_mb_nr] = currMB->mb_field;
 
-  img->siblock[img->mb_x][img->mb_y]=0;
+//  img->siblock[img->mb_x][img->mb_y]=0;
 
   if ((img->type==P_SLICE ))    // inter frame
     interpret_mb_mode_P(img);
@@ -763,7 +767,7 @@ int read_one_macroblock(struct img_par *img,struct inp_par *inp)
     interpret_mb_mode_P(img);
   else if (img->type==SI_SLICE)     // SI frame
     interpret_mb_mode_SI(img);
-
+/*
   if(img->MbaffFrameFlag)
   {
     if(currMB->mb_field)
@@ -772,7 +776,7 @@ int read_one_macroblock(struct img_par *img,struct inp_par *inp)
       img->num_ref_idx_l1_active <<=1;
     }
   }
-
+*/
   //====== READ 8x8 SUB-PARTITION MODES (modes of 8x8 blocks) and Intra VBST block modes ======
   if (IS_P8x8 (currMB))
   {
@@ -789,7 +793,7 @@ int read_one_macroblock(struct img_par *img,struct inp_par *inp)
       SetB8Mode (img, currMB, currSE.value1, i);	//++ 解析子宏块的分割模式
     }
   }
-
+/*
   if(active_pps->constrained_intra_pred_flag && (img->type==P_SLICE|| img->type==B_SLICE))        // inter frame
   {
     if( !IS_INTRA(currMB) )
@@ -797,7 +801,7 @@ int read_one_macroblock(struct img_par *img,struct inp_par *inp)
       img->intra_block[img->current_mb_nr] = 0;
     }
   }
-
+*/
   //! TO for Error Concelament
   //! If we have an INTRA Macroblock and we lost the partition
   //! which contains the intra coefficients Copy MB would be better 
@@ -806,20 +810,21 @@ int read_one_macroblock(struct img_par *img,struct inp_par *inp)
   //! up to now there is no other way.
   //++ 为了进行错误隐藏，如果某个帧内宏块包含帧内系数的部分在传输过程中丢失了。则采用复制宏块的方法，而不是简单地用一个
   //++ 灰度值128的灰度块来填充。虽然这样看起来仍然不正确，但是对于这类宏块分割丢失情况，目前还没有其他处理方式。
-    dP = &(currSlice->partArr[partMap[SE_CBP_INTRA]]);
+/*    dP = &(currSlice->partArr[partMap[SE_CBP_INTRA]]);
   if(IS_INTRA (currMB) && dP->bitstream->ei_flag && img->number)	//++ 如果当前宏块是帧内块而且有错误而且不是第一个宏块，则
   {																	//++ 对当前宏块做一些设置，以便后面采用上面提到的复制宏块
     currMB->mb_type = 0;											//++ 的处理方法。另：因为第一个宏块没有可复制的对象，所以
     currMB->ei_flag = 1;											//++ 这里要判断当前宏块是不是第一个宏块。
     for (i=0;i<4;i++) {currMB->b8mode[i]=currMB->b8pdir[i]=0; }
   }
+  */
   dP = &(currSlice->partArr[partMap[currSE.type]]);
   //! End TO
 
 
   //--- init macroblock data ---
   init_macroblock       (img);	//++ 将亮度块中的16个4*4块的预测模式设置为2（直接预测），运动向量置0
-
+/*
   if (IS_DIRECT (currMB) && img->cod_counter >= 0)	//++ B_Skip类型宏块。无残差，无MVD。解码时，通过Direct预测模式（时间或空间）计算出前、后向MV（在 decode_one_macroblock 函数中计算），
   {													//++ 然后直接利用前、后向MV得到像素预测值。像素重构值=像素预测值
     currMB->cbp = 0;								//++ 如果img->cod_counter<0，则为B_Direct_16*16类型宏块。有残差，无MVD。解码过程与B_Skip类型宏块相同，只是多了一个残差的解码过程
@@ -830,22 +835,24 @@ int read_one_macroblock(struct img_par *img,struct inp_par *inp)
 
     return DECODE_MB;
   }
+*/
 
   if (IS_COPY (currMB)) //keep last macroblock	//++ COPY宏块（也即P_Skip类型宏块）。无残差，无MVD。直接利用预测MV得到像素预测值。像素重构值=像素预测值
   {
-    int i, j, k, pmv[2];
+ /*   int i, j, k, pmv[2];
     int zeroMotionAbove;
     int zeroMotionLeft;
-    PixelPos mb_a, mb_b;
     int      a_mv_y = 0;
     int      a_ref_idx = 0;
     int      b_mv_y = 0;
     int      b_ref_idx = 0;
     int      list_offset = ((img->MbaffFrameFlag)&&(currMB->mb_field))? img->current_mb_nr%2 ? 4 : 2 : 0;
+*/
+//	PixelPos mb_a, mb_b;
 
-    getLuma4x4Neighbour(img->current_mb_nr,0,0,-1, 0,&mb_a);
-    getLuma4x4Neighbour(img->current_mb_nr,0,0, 0,-1,&mb_b);
-
+  //  getLuma4x4Neighbour_Simp(img->current_mb_nr,0,0,-1, 0,&mb_a);
+ //   getLuma4x4Neighbour_Simp(img->current_mb_nr,0,0, 0,-1,&mb_b);
+/*
     if (mb_a.available)
     {
       a_mv_y    = dec_picture->mv[LIST_0][mb_a.pos_x][mb_a.pos_y][1];
@@ -879,13 +886,14 @@ int read_one_macroblock(struct img_par *img,struct inp_par *inp)
         b_ref_idx >>=1;
       }
     }
-    
-    zeroMotionLeft  = !mb_a.available ? 1 : a_ref_idx==0 && dec_picture->mv[LIST_0][mb_a.pos_x][mb_a.pos_y][0]==0 && a_mv_y==0 ? 1 : 0;
-    zeroMotionAbove = !mb_b.available ? 1 : b_ref_idx==0 && dec_picture->mv[LIST_0][mb_b.pos_x][mb_b.pos_y][0]==0 && b_mv_y==0 ? 1 : 0;
+    */
+ //   zeroMotionLeft  = !mb_a.available ? 1 : a_ref_idx==0 && dec_picture->mv[LIST_0][mb_a.pos_x][mb_a.pos_y][0]==0 && a_mv_y==0 ? 1 : 0;
+ //   zeroMotionAbove = !mb_b.available ? 1 : b_ref_idx==0 && dec_picture->mv[LIST_0][mb_b.pos_x][mb_b.pos_y][0]==0 && b_mv_y==0 ? 1 : 0;
 
-    currMB->cbp = 0;
+ //   currMB->cbp = 0;
+ 
     reset_coeffs();
-
+/*
     img_block_y   = img->block_y;
   
     if (zeroMotionAbove || zeroMotionLeft)
@@ -894,28 +902,33 @@ int read_one_macroblock(struct img_par *img,struct inp_par *inp)
         for(j=0;j<BLOCK_SIZE;j++)
           for (k=0;k<2;k++)
             dec_picture->mv[LIST_0][img->block_x+i][img->block_y+j][k] = 0;
+            
     }
     else
     {
       SetMotionVectorPredictor (img, pmv, pmv+1, 0, LIST_0, dec_picture->ref_idx, dec_picture->mv, 0, 0, 16, 16);
-      
       for(i=0;i<BLOCK_SIZE;i++)
         for(j=0;j<BLOCK_SIZE;j++)
           for (k=0;k<2;k++)
           {
             dec_picture->mv[LIST_0][img->block_x+i][img_block_y+j][k] = pmv[k];
           }
+         
     }
-
+     */
+/*
     for(i=0;i<BLOCK_SIZE;i++)
       for(j=0;j<BLOCK_SIZE;j++)
       {
         dec_picture->ref_idx[LIST_0][img->block_x+i][img_block_y+j] = 0;
         dec_picture->ref_pic_id[LIST_0][img->block_x+i][img_block_y+j] = dec_picture->ref_pic_num[img->current_slice_nr][LIST_0 + list_offset][dec_picture->ref_idx[LIST_0][img->block_x+i][img_block_y+j]];
       }
+*/
 
     return DECODE_MB;
   }
+
+
   if(currMB->mb_type!=IPCM)
   {
     
@@ -938,7 +951,8 @@ int read_one_macroblock(struct img_par *img,struct inp_par *inp)
     // same category as MBTYPE
     dP = &(currSlice->partArr[partMap[SE_MBTYPE]]);
     readIPCMcoeffsFromNAL(img,inp,dP);
-  }*/
+  }
+  #endif
   return DECODE_MB;
 }
 
@@ -1035,7 +1049,7 @@ void readIPCMcoeffsFromNAL(struct img_par *img, struct inp_par *inp, struct data
   // The reason is that, whether current MB is the last MB in slice or not, there is
   // at least one 'end of slice' syntax after this MB. So when fetching bytes in this 
     // initialisation process, we can guarantee there is bits available in bitstream. 
-  init_decoding_engine_IPCM(img);
+//  init_decoding_engine_IPCM(img);
 
   }
   else
@@ -1059,21 +1073,21 @@ void readIPCMcoeffsFromNAL(struct img_par *img, struct inp_par *inp, struct data
     for(j=0;j<16;j++)
     {
       readSyntaxElement_FLC(&currSE, dP->bitstream);
-      img->cof[i/4][j/4][i%4][j%4]=currSE.value1;
+//      img->cof[i/4][j/4][i%4][j%4]=currSE.value1;
     }
 
   for(i=0;i<8;i++)
     for(j=0;j<8;j++)
     {
       readSyntaxElement_FLC(&currSE, dP->bitstream);
-      img->cof[i/4][j/4+4][i%4][j%4]=currSE.value1;
+  //    img->cof[i/4][j/4+4][i%4][j%4]=currSE.value1;
     }
 
   for(i=0;i<8;i++)
     for(j=0;j<8;j++)
     {
       readSyntaxElement_FLC(&currSE, dP->bitstream);
-      img->cof[i/4+2][j/4+4][i%4][j%4]=currSE.value1;
+   //   img->cof[i/4+2][j/4+4][i%4][j%4]=currSE.value1;
     }
   }
 }
@@ -1132,15 +1146,17 @@ void read_ipred_modes(struct img_par *img,struct inp_par *inp)
             readSyntaxElement_Intra4x4PredictionMode(&currSE,img,inp,dP);
           else 
           {
-            currSE.context=(b8<<2)+(j<<1)+i;
+           // currSE.context=(b8<<2)+(j<<1)+i;
+			dP->readSyntaxElement = readSyntaxElement_UVLC_Simp;
             dP->readSyntaxElement(&currSE,img,inp,dP);
+			dP->readSyntaxElement = readSyntaxElement_UVLC;
           }
-
+/*
           bx = ((b8&1)<<1) + i;
           by = (b8&2)      + j;
 
-          getLuma4x4Neighbour(img->current_mb_nr, bx, by, -1,  0, &left_block);
-          getLuma4x4Neighbour(img->current_mb_nr, bx, by,  0, -1, &top_block);
+          getLuma4x4Neighbour_Simp(img->current_mb_nr, bx, by, -1,  0, &left_block);
+          getLuma4x4Neighbour_Simp(img->current_mb_nr, bx, by,  0, -1, &top_block);
           
           //get from array and decode
           bi = img->block_x + bx;
@@ -1173,7 +1189,8 @@ void read_ipred_modes(struct img_par *img,struct inp_par *inp)
           dec = (currSE.value1 == -1) ? mostProbableIntraPredMode : currSE.value1 + (currSE.value1 >= mostProbableIntraPredMode);
 
           //set
-          img->ipredmode[bi][bj]=dec;
+ //         img->ipredmode[bi][bj]=dec;
+*/
         }
     }
   }
@@ -1181,7 +1198,7 @@ void read_ipred_modes(struct img_par *img,struct inp_par *inp)
   if (IntraChromaPredModeFlag)
   {
     currSE.type = SE_INTRAPREDMODE;
-    TRACE_STRING("intra_chroma_pred_mode");
+//    TRACE_STRING("intra_chroma_pred_mode");
     dP = &(currSlice->partArr[partMap[currSE.type]]);
 
     if (active_pps->entropy_coding_mode_flag == UVLC || dP->bitstream->ei_flag) currSE.mapping = linfo_ue;
@@ -1194,6 +1211,7 @@ void read_ipred_modes(struct img_par *img,struct inp_par *inp)
     {
       error("illegal chroma intra pred mode!\n", 600);
     }
+    
   }
 }
 
@@ -1465,8 +1483,7 @@ void readMotionInfoFromNAL (struct img_par *img, struct inp_par *inp)
   int ****   co_located_mv;
   int ***    co_located_ref_idx;
   int64 ***    co_located_ref_id;
-
-  if ((img->MbaffFrameFlag)&&(currMB->mb_field))
+/*  if ((img->MbaffFrameFlag)&&(currMB->mb_field))
   {
     if(img->current_mb_nr%2)
     {
@@ -1490,7 +1507,7 @@ void readMotionInfoFromNAL (struct img_par *img, struct inp_par *inp)
     co_located_ref_idx = Co_located->ref_idx;
     co_located_ref_id = Co_located->ref_pic_id;
   }
-
+*/
   if (bframe && IS_P8x8 (currMB))	//++ 计算B_Direct_8*8类型子块的参考帧
   {
     if (img->direct_type)	//++ 空间直接模式，这里主要是因为可能子宏块分割中存在Direct模式，所以先进行一个时空Direct模式的判断
@@ -1505,10 +1522,11 @@ void readMotionInfoFromNAL (struct img_par *img, struct inp_par *inp)
       int pmvfw[2]={0,0},pmvbw[2]={0,0};
      
       
-      getLuma4x4Neighbour(img->current_mb_nr, 0, 0, -1,  0, &mb_left);
-      getLuma4x4Neighbour(img->current_mb_nr, 0, 0,  0, -1, &mb_up);
-      getLuma4x4Neighbour(img->current_mb_nr, 0, 0, 16, -1, &mb_upright);
-      getLuma4x4Neighbour(img->current_mb_nr, 0, 0, -1, -1, &mb_upleft);
+    //  getLuma4x4Neighbour(img->current_mb_nr, 0, 0, -1,  0, &mb_left);
+   //   getLuma4x4Neighbour(img->current_mb_nr, 0, 0,  0, -1, &mb_up);
+  //    getLuma4x4Neighbour(img->current_mb_nr, 0, 0, 16, -1, &mb_upright);
+  //    getLuma4x4Neighbour(img->current_mb_nr, 0, 0, -1, -1, &mb_upleft);
+	  /* 
 
       if (!img->MbaffFrameFlag)
       {
@@ -1522,7 +1540,7 @@ void readMotionInfoFromNAL (struct img_par *img, struct inp_par *inp)
         bw_rFrameUL = mb_upleft.available ? dec_picture->ref_idx[LIST_1][mb_upleft.pos_x][mb_upleft.pos_y] : -1;
         bw_rFrameUR = mb_upright.available ? dec_picture->ref_idx[LIST_1][mb_upright.pos_x][mb_upright.pos_y] : bw_rFrameUL;      
       }
-      else
+     else
       {
         if (img->mb_data[img->current_mb_nr].mb_field)
         {
@@ -1608,7 +1626,7 @@ void readMotionInfoFromNAL (struct img_par *img, struct inp_par *inp)
           dec_picture->ref_idx[LIST_1][mb_upright.pos_x][mb_upright.pos_y] : bw_rFrameUL;      
         }
       }
-      
+    
     fw_rFrame = (fw_rFrameL >= 0 && fw_rFrameU >= 0) ? min(fw_rFrameL,fw_rFrameU): max(fw_rFrameL,fw_rFrameU);
     fw_rFrame = (fw_rFrame >= 0 && fw_rFrameUR >= 0) ? min(fw_rFrame,fw_rFrameUR): max(fw_rFrame,fw_rFrameUR);
       
@@ -1621,8 +1639,8 @@ void readMotionInfoFromNAL (struct img_par *img, struct inp_par *inp)
       
     if (bw_rFrame >=0)
         SetMotionVectorPredictor (img, pmvbw, pmvbw+1, bw_rFrame, LIST_1, dec_picture->ref_idx, dec_picture->mv, 0, 0, 16, 16);
-      
-      
+     */ 
+      /*
       for (i=0;i<4;i++)
       {
         if (currMB->b8mode[i] == 0)
@@ -1686,9 +1704,9 @@ void readMotionInfoFromNAL (struct img_par *img, struct inp_par *inp)
               }
             }
       }
-    }
-    else	//++ 以下代码是计算时间直接模式的参考帧，但是后面又做了一次计算，因此注释掉此处
-    {/*
+    */}
+   /* else	//++ 以下代码是计算时间直接模式的参考帧，但是后面又做了一次计算，因此注释掉此处
+    {
       for (i=0;i<4;i++)
       {
         if (currMB->b8mode[i] == 0)	//++ 8*8子宏块为B_Direct_8*8类型
@@ -1735,8 +1753,8 @@ void readMotionInfoFromNAL (struct img_par *img, struct inp_par *inp)
           }
         }
       }
-  */}
-  } 
+  }
+  */} 
 
   //  If multiple ref. frames, read reference frame for the MB *********************************
   if(img->num_ref_idx_l0_active>1)	//++ 计算非Direc类型块分割的前向参考帧（多帧参考）
@@ -1746,8 +1764,8 @@ void readMotionInfoFromNAL (struct img_par *img, struct inp_par *inp)
     currSE.type = SE_REFFRAME;
     dP = &(currSlice->partArr[partMap[SE_REFFRAME]]);
 
-    if (active_pps->entropy_coding_mode_flag == UVLC || dP->bitstream->ei_flag)   currSE.mapping = linfo_ue;
-    else                                                      currSE.reading = readRefFrame_CABAC;
+//    if (active_pps->entropy_coding_mode_flag == UVLC || dP->bitstream->ei_flag)   currSE.mapping = linfo_ue;
+//    else                                                      currSE.reading = readRefFrame_CABAC;
     
     for (j0=0; j0<4; j0+=step_v0)
     {
@@ -1756,14 +1774,14 @@ void readMotionInfoFromNAL (struct img_par *img, struct inp_par *inp)
         k=2*(j0/2)+(i0/2);
         if ((currMB->b8pdir[k]==0 || currMB->b8pdir[k]==2) && currMB->b8mode[k]!=0)
         {
-          TRACE_STRING("ref_idx_l0");
+   //       TRACE_STRING("ref_idx_l0");
 
-          img->subblock_x = i0;
-          img->subblock_y = j0;
+   //       img->subblock_x = i0;
+   //       img->subblock_y = j0;
           
           if (!IS_P8x8 (currMB) || bframe || (!bframe && !img->allrefzero))
           {
-            currSE.context = BType2CtxRef (currMB->b8mode[k]);	//++ 用于CABAC
+          //  currSE.context = BType2CtxRef (currMB->b8mode[k]);	//++ 用于CABAC
             if( (active_pps->entropy_coding_mode_flag == UVLC || dP->bitstream->ei_flag) && flag_mode )
             {
               currSE.len = 1;
@@ -1773,15 +1791,17 @@ void readMotionInfoFromNAL (struct img_par *img, struct inp_par *inp)
             else
             {
               currSE.value2 = LIST_0;
+			  dP->readSyntaxElement = readSyntaxElement_UVLC_Simp;
               dP->readSyntaxElement (&currSE,img,inp,dP);
+			  dP->readSyntaxElement = readSyntaxElement_UVLC;
             }
-            refframe = currSE.value1;
+            //refframe = currSE.value1;
             
-          }
+          }/*
           else
           {
             refframe = 0;
-          }
+          }*/
           
           /*
           if (bframe && refframe>img->buf_cycle)    // img->buf_cycle should be correct for field MBs now
@@ -1791,17 +1811,17 @@ void readMotionInfoFromNAL (struct img_par *img, struct inp_par *inp)
           }
           */
           
-          for (j=j0; j<j0+step_v0;j++)
+        /*  for (j=j0; j<j0+step_v0;j++)
             for (i=i0; i<i0+step_h0;i++)
             {
               dec_picture->ref_idx[LIST_0][img->block_x + i][img->block_y + j] = refframe;
-            }
+            }*/
           
         }
       }
     }
   }
-  else	//++ 计算非Direc类型块分割的前向参考帧（单帧参考，直接赋值）
+  /*else	//++ 计算非Direc类型块分割的前向参考帧（单帧参考，直接赋值）
   {
     for (j0=0; j0<4; j0+=step_v0)
     {
@@ -1818,17 +1838,17 @@ void readMotionInfoFromNAL (struct img_par *img, struct inp_par *inp)
         }
       }
     }
-  }
+  }*/
   
   //  If backward multiple ref. frames, read backward reference frame for the MB *********************************
   if(img->num_ref_idx_l1_active>1)	//++ 计算非Direc类型块分割的后向参考帧（多帧参考）
   {
     flag_mode = ( img->num_ref_idx_l1_active == 2 ? 1 : 0);	//++ 如果参考帧数只有两帧，则采用一比特定长编码。如果参考帧数大于2，则采用变长编码（哥伦布编码）
 															//++ 这是因为如果参考帧数为2，采用FLC只需要一个比特就能表示参考帧号，而VLC可能需要三个比特（当参考帧号不为0时）
-    currSE.type = SE_REFFRAME;
+ //   currSE.type = SE_REFFRAME;
     dP = &(currSlice->partArr[partMap[SE_REFFRAME]]);
-    if (active_pps->entropy_coding_mode_flag == UVLC || dP->bitstream->ei_flag)   currSE.mapping = linfo_ue;
-    else                                                      currSE.reading = readRefFrame_CABAC;
+ //   if (active_pps->entropy_coding_mode_flag == UVLC || dP->bitstream->ei_flag)   currSE.mapping = linfo_ue;
+//    else                                                      currSE.reading = readRefFrame_CABAC;
     
     for (j0=0; j0<4; j0+=step_v0)
     {
@@ -1837,12 +1857,12 @@ void readMotionInfoFromNAL (struct img_par *img, struct inp_par *inp)
         k=2*(j0/2)+(i0/2);
         if ((currMB->b8pdir[k]==1 || currMB->b8pdir[k]==2) && currMB->b8mode[k]!=0)
         {
-          TRACE_STRING("ref_idx_l1");
+//          TRACE_STRING("ref_idx_l1");
 
-          img->subblock_x = i0;
-          img->subblock_y = j0;
+ //         img->subblock_x = i0;
+ //         img->subblock_y = j0;
           
-          currSE.context = BType2CtxRef (currMB->b8mode[k]);
+  //        currSE.context = BType2CtxRef (currMB->b8mode[k]);
           if( (active_pps->entropy_coding_mode_flag == UVLC || dP->bitstream->ei_flag) && flag_mode )
           {
             currSE.len = 1;
@@ -1852,8 +1872,11 @@ void readMotionInfoFromNAL (struct img_par *img, struct inp_par *inp)
           else
           {
             currSE.value2 = LIST_1;
-            dP->readSyntaxElement (&currSE,img,inp,dP);
+			dP->readSyntaxElement = readSyntaxElement_UVLC_Simp;
+            dP->readSyntaxElement (&currSE,img,inp,dP);			
+			dP->readSyntaxElement = readSyntaxElement_UVLC;
           }
+		  /*
           refframe = currSE.value1;
 
           for (j=j0; j<j0+step_v0;j++)
@@ -1862,12 +1885,12 @@ void readMotionInfoFromNAL (struct img_par *img, struct inp_par *inp)
             {
               dec_picture->ref_idx[LIST_1][img->block_x + i][img->block_y + j] = refframe;
             }
-          }
+          }*/
         }
       }
     }
-  }
-  else	//++ 计算非Direc类型块分割的后向参考帧（单帧参考，直接赋值）
+ }
+  /* else	//++ 计算非Direc类型块分割的后向参考帧（单帧参考，直接赋值）
   {
     for (j0=0; j0<4; j0+=step_v0)
     {
@@ -1884,14 +1907,14 @@ void readMotionInfoFromNAL (struct img_par *img, struct inp_par *inp)
         }
       }
     }
-  }
+  }*/
 
   //=====  READ FORWARD MOTION VECTORS =====
   currSE.type = SE_MVD;
   dP = &(currSlice->partArr[partMap[SE_MVD]]);
 
-  if (active_pps->entropy_coding_mode_flag == UVLC || dP->bitstream->ei_flag) currSE.mapping = linfo_se;
-  else                                                  currSE.reading = readMVD_CABAC;
+ // if (active_pps->entropy_coding_mode_flag == UVLC || dP->bitstream->ei_flag) currSE.mapping = linfo_se;
+ // else                                                  currSE.reading = readMVD_CABAC;
 
   for (j0=0; j0<4; j0+=step_v0)
     for (i0=0; i0<4; i0+=step_h0)
@@ -1904,29 +1927,32 @@ void readMotionInfoFromNAL (struct img_par *img, struct inp_par *inp)
         step_h   = BLOCK_STEP [mv_mode][0];
         step_v   = BLOCK_STEP [mv_mode][1];
         
-        refframe = dec_picture->ref_idx[LIST_0][img->block_x+i0][img->block_y+j0];
-        
+   //     refframe = dec_picture->ref_idx[LIST_0][img->block_x+i0][img->block_y+j0];
+      
         for (j=j0; j<j0+step_v0; j+=step_v)
         {
           for (i=i0; i<i0+step_h0; i+=step_h)
           {
-            j4 = img->block_y+j;
-            i4 = img->block_x+i;
+//            j4 = img->block_y+j;
+//            i4 = img->block_x+i;
             
             // first make mv-prediction
-            SetMotionVectorPredictor (img, pmv, pmv+1, refframe, LIST_0, dec_picture->ref_idx, dec_picture->mv, i, j, 4*step_h, 4*step_v);
+//            SetMotionVectorPredictor (img, pmv, pmv+1, refframe, LIST_0, dec_picture->ref_idx, dec_picture->mv, i, j, 4*step_h, 4*step_v);
 
             for (k=0; k < 2; k++) 
             {
-              TRACE_STRING("mvd_l0");
+//              TRACE_STRING("mvd_l0");
 
-              img->subblock_x = i; // position used for context determination
-              img->subblock_y = j; // position used for context determination
+//              img->subblock_x = i; // position used for context determination
+//              img->subblock_y = j; // position used for context determination
               currSE.value2 = k<<1; // identifies the component; only used for context determination
-              dP->readSyntaxElement(&currSE,img,inp,dP);
-              curr_mvd = currSE.value1; 
+
+			  dP->readSyntaxElement = readSyntaxElement_UVLC_Simp;
+			  dP->readSyntaxElement(&currSE,img,inp,dP);
+			  dP->readSyntaxElement = readSyntaxElement_UVLC;
+           /*   curr_mvd = currSE.value1; 
               
-              vec=curr_mvd+pmv[k];           /* find motion vector */
+              vec=curr_mvd+pmv[k];           //find motion vector 
               
               for(ii=0;ii<step_h;ii++)
               {
@@ -1935,11 +1961,11 @@ void readMotionInfoFromNAL (struct img_par *img, struct inp_par *inp)
                   dec_picture->mv  [LIST_0][i4+ii][j4+jj][k] = vec;
                   currMB->mvd      [LIST_0][j+jj] [i+ii] [k] = curr_mvd;
                 }
-              }
+              }*/
             }
           }
         }
-      }
+      }/* 
       else if (currMB->b8mode[k=2*(j0/2)+(i0/2)]==0)      
       {  
         if (!img->direct_type)	//++ 时间直接模式
@@ -1949,7 +1975,7 @@ void readMotionInfoFromNAL (struct img_par *img, struct inp_par *inp)
 
           int refList = (co_located_ref_idx[LIST_0][img->block_x+i0][imgblock_y+j0]== -1 ? LIST_1 : LIST_0);	//++ 如果“相对位置块”的前向参考帧不可用则采用其后向参考帧
           int ref_idx =  co_located_ref_idx[refList][img->block_x+i0][imgblock_y+j0];	//++ 此变量即为标准中的的refIdxCol
-          
+         
           if (ref_idx==-1)	//++ 该if语句对应标准中的公式8-188
           {
             for (j=j0; j<j0+step_v0; j++)
@@ -1968,7 +1994,7 @@ void readMotionInfoFromNAL (struct img_par *img, struct inp_par *inp)
           }
           else 
           {        
-            int mapped_idx=-1, iref;                             
+             int mapped_idx=-1, iref;                             
             int j6;
                         
             for (iref=0;iref<min(img->num_ref_idx_l0_active,listXsize[LIST_0 + list_offset]);iref++)
@@ -1988,7 +2014,7 @@ void readMotionInfoFromNAL (struct img_par *img, struct inp_par *inp)
               error("temporal direct error\ncolocated block has ref that is unavailable",-1111);
             }
             
-            
+          
             for (j=j0; j<j0+step_v0; j++)
               for (i=i0; i<i0+step_h0; i++)
               {
@@ -2020,7 +2046,7 @@ void readMotionInfoFromNAL (struct img_par *img, struct inp_par *inp)
           }  
       } 
     }
-  }
+  */}
   
   //=====  READ BACKWARD MOTION VECTORS =====
   currSE.type = SE_MVD;
@@ -2036,33 +2062,35 @@ void readMotionInfoFromNAL (struct img_par *img, struct inp_par *inp)
       k=2*(j0/2)+(i0/2);
       if ((currMB->b8pdir[k]==1 || currMB->b8pdir[k]==2) && (currMB->b8mode[k]!=0))//has backward vector
       {
-        mv_mode  = currMB->b8mode[k];
+  /*      mv_mode  = currMB->b8mode[k];
         step_h   = BLOCK_STEP [mv_mode][0];
         step_v   = BLOCK_STEP [mv_mode][1];
         
         refframe = dec_picture->ref_idx[LIST_1][img->block_x+i0][img->block_y+j0];
-
+*/
         for (j=j0; j<j0+step_v0; j+=step_v)
         {
           for (i=i0; i<i0+step_h0; i+=step_h)
           {
-            j4 = img->block_y+j;
-            i4 = img->block_x+i;
+    //        j4 = img->block_y+j;
+   //         i4 = img->block_x+i;
             
             // first make mv-prediction
-            SetMotionVectorPredictor (img, pmv, pmv+1, refframe, LIST_1, dec_picture->ref_idx, dec_picture->mv, i, j, 4*step_h, 4*step_v);
+ //           SetMotionVectorPredictor (img, pmv, pmv+1, refframe, LIST_1, dec_picture->ref_idx, dec_picture->mv, i, j, 4*step_h, 4*step_v);
             
             for (k=0; k < 2; k++) 
             {
-              TRACE_STRING("mvd_l1");
+ //             TRACE_STRING("mvd_l1");
               
-              img->subblock_x = i; // position used for context determination
-              img->subblock_y = j; // position used for context determination
-              currSE.value2   = (k<<1) +1; // identifies the component; only used for context determination
-              dP->readSyntaxElement(&currSE,img,inp,dP);
-              curr_mvd = currSE.value1; 
+  //            img->subblock_x = i; // position used for context determination
+  //            img->subblock_y = j; // position used for context determination
+ //             currSE.value2   = (k<<1) +1; // identifies the component; only used for context determination
+			  dP->readSyntaxElement = readSyntaxElement_UVLC_Simp;
+			  dP->readSyntaxElement(&currSE,img,inp,dP);
+			  dP->readSyntaxElement = readSyntaxElement_UVLC;
+/*              curr_mvd = currSE.value1; 
               
-              vec=curr_mvd+pmv[k];           /* find motion vector */
+              vec=curr_mvd+pmv[k];           // find motion vector 
 
               for(ii=0;ii<step_h;ii++)
               {
@@ -2071,15 +2099,15 @@ void readMotionInfoFromNAL (struct img_par *img, struct inp_par *inp)
                   dec_picture->mv  [LIST_1][i4+ii][j4+jj][k] = vec;
                   currMB->mvd      [LIST_1][j+jj] [i+ii] [k] = curr_mvd;
 				}
-              }
-            }
+              }*/
+            }				
           }
         }
       }
     }
   }
   // record reference picture Ids for deblocking decisions
- 
+ /*
   for(i4=img->block_x;i4<(img->block_x+4);i4++)
   for(j4=img->block_y;j4<(img->block_y+4);j4++)
   {
@@ -2091,7 +2119,7 @@ void readMotionInfoFromNAL (struct img_par *img, struct inp_par *inp)
        dec_picture->ref_pic_id[LIST_1][i4][j4] = dec_picture->ref_pic_num[img->current_slice_nr][LIST_1 + list_offset][dec_picture->ref_idx[LIST_1][i4][j4]];  
     else
        dec_picture->ref_pic_id[LIST_1][i4][j4] = INT64_MIN;  
-  }
+  }*/
 }
 
 
@@ -2556,7 +2584,7 @@ void readCBPandCoeffsFromNAL(struct img_par *img,struct inp_par *inp)
       currSE.reading = readCBP_CABAC;
     }
 
-    TRACE_STRING("coded_block_pattern");
+ //   TRACE_STRING("coded_block_pattern");
 
     dP->readSyntaxElement(&currSE,img,inp,dP);
     currMB->cbp = cbp = currSE.value1;
@@ -2567,39 +2595,41 @@ void readCBPandCoeffsFromNAL(struct img_par *img,struct inp_par *inp)
       else                    currSE.type = SE_DELTA_QUANT_INTRA;
 
       dP = &(currSlice->partArr[partMap[currSE.type]]);
-      
+ /*     
       if (active_pps->entropy_coding_mode_flag == UVLC || dP->bitstream->ei_flag)
       {
         currSE.mapping = linfo_se;
       }
       else
                 currSE.reading= readDquant_CABAC; //gabi
-
+*/
       TRACE_STRING("mb_qp_delta");
 
+	  dP->readSyntaxElement = readSyntaxElement_UVLC_Simp;
       dP->readSyntaxElement(&currSE,img,inp,dP);
-      currMB->delta_quant = currSE.value1;
-      img->qp= (img->qp-MIN_QP+currMB->delta_quant+(MAX_QP-MIN_QP+1))%(MAX_QP-MIN_QP+1)+MIN_QP;
+      dP->readSyntaxElement = readSyntaxElement_UVLC;
+ //     currMB->delta_quant = currSE.value1;
+ //     img->qp= (img->qp-MIN_QP+currMB->delta_quant+(MAX_QP-MIN_QP+1))%(MAX_QP-MIN_QP+1)+MIN_QP;
     }
   }
   else
   {
     cbp = currMB->cbp;
   }
-
+/*
   for (i=0;i<BLOCK_SIZE;i++)
     for (j=0;j<BLOCK_SIZE;j++)
       for(iii=0;iii<BLOCK_SIZE;iii++)
         for(jjj=0;jjj<BLOCK_SIZE;jjj++)
           img->cof[i][j][iii][jjj]=0;// reset luma coeffs
-
+*/
 
   if (IS_NEWINTRA (currMB)) // read DC coeffs for new intra modes	//++ 当前宏块是帧内16*16或者I_PCM类型宏块
   {
     currSE.type = SE_DELTA_QUANT_INTRA;
 
     dP = &(currSlice->partArr[partMap[currSE.type]]);
-    
+   /*
     if (active_pps->entropy_coding_mode_flag == UVLC || dP->bitstream->ei_flag)
     {
       currSE.mapping = linfo_se;
@@ -2607,23 +2637,25 @@ void readCBPandCoeffsFromNAL(struct img_par *img,struct inp_par *inp)
     else
     {
       currSE.reading= readDquant_CABAC;
-    }
+    }*/
 #if TRACE
     snprintf(currSE.tracestring, TRACESTRING_SIZE, "Delta quant ");
 #endif
-    dP->readSyntaxElement(&currSE,img,inp,dP);
-    currMB->delta_quant = currSE.value1;
+    dP->readSyntaxElement = readSyntaxElement_UVLC_Simp;
+    dP->readSyntaxElement(&currSE,img,inp,dP);	
+    dP->readSyntaxElement = readSyntaxElement_UVLC;
+/*    currMB->delta_quant = currSE.value1;
     img->qp= (img->qp-MIN_QP+currMB->delta_quant+(MAX_QP-MIN_QP+1))%(MAX_QP-MIN_QP+1)+MIN_QP;
 
     for (i=0;i<BLOCK_SIZE;i++)
       for (j=0;j<BLOCK_SIZE;j++)
         img->ipredmode[img->block_x+i][img->block_y+j]=DC_PRED;
-
+*/
     if (active_pps->entropy_coding_mode_flag == UVLC)
     {
       readCoeff4x4_CAVLC(img, inp, LUMA_INTRA16x16DC, 0, 0,
                           levarr, runarr, &numcoeff);
-
+/*
       coef_ctr=-1;
       level = 1;                            // just to get inside the loop
       for(k = 0; k < numcoeff; k++)
@@ -2645,7 +2677,7 @@ void readCBPandCoeffsFromNAL(struct img_par *img,struct inp_par *inp)
 
           img->cof[i0][j0][0][0]=levarr[k];// add new intra DC coeff
         }
-      }
+      }*/
     }
     else
     {
@@ -2655,7 +2687,7 @@ void readCBPandCoeffsFromNAL(struct img_par *img,struct inp_par *inp)
 
       currSE.context      = LUMA_16DC;
       currSE.type         = SE_LUM_DC_INTRA;
-      img->is_intra_block = 1;
+  /*    img->is_intra_block = 1;
 
       if (active_pps->entropy_coding_mode_flag == UVLC || dP->bitstream->ei_flag)
       {
@@ -2665,7 +2697,7 @@ void readCBPandCoeffsFromNAL(struct img_par *img,struct inp_par *inp)
       {
         currSE.reading = readRunLevel_CABAC;
       }
-
+*/
 
 
       coef_ctr=-1;
@@ -2675,8 +2707,10 @@ void readCBPandCoeffsFromNAL(struct img_par *img,struct inp_par *inp)
 #if TRACE
         snprintf(currSE.tracestring, TRACESTRING_SIZE, "DC luma 16x16 ");
 #endif
+        dP->readSyntaxElement = readSyntaxElement_UVLC_Simp;
         dP->readSyntaxElement(&currSE,img,inp,dP);
-        level = currSE.value1;
+		dP->readSyntaxElement = readSyntaxElement_UVLC;
+  /*      level = currSE.value1;
         run   = currSE.value2;
         len   = currSE.len;
 
@@ -2696,13 +2730,13 @@ void readCBPandCoeffsFromNAL(struct img_par *img,struct inp_par *inp)
           }
 
           img->cof[i0][j0][0][0]=level;// add new intra DC coeff
-        }
+        }*/
       }
     }
 
-    itrans_2(img);// transform new intra DC	//++ 亮度DC系数反Hadamard变换
+ //   itrans_2(img);// transform new intra DC	//++ 亮度DC系数反Hadamard变换
   }
-
+/*
   qp_per    = (img->qp-MIN_QP)/6;
   qp_rem    = (img->qp-MIN_QP)%6;
   qp_uv = img->qp + active_pps->chroma_qp_index_offset;
@@ -2710,7 +2744,7 @@ void readCBPandCoeffsFromNAL(struct img_par *img,struct inp_par *inp)
   qp_per_uv = QP_SCALE_CR[qp_uv-MIN_QP]/6;
   qp_rem_uv = QP_SCALE_CR[qp_uv-MIN_QP]%6;
   currMB->qp = img->qp;
-
+*/
   // luma coefficients
   //++ ************* 读取一个宏块中每个4*4块亮度系数 *************
   //++ 4*4块的处理顺序为：
@@ -2761,7 +2795,7 @@ void readCBPandCoeffsFromNAL(struct img_par *img,struct inp_par *inp)
                                     levarr, runarr, &numcoeff);
                 start_scan = 0;
               }
-
+/*
               coef_ctr = start_scan-1;	//++ coef_ctr为系数计数，即指明当前处理的是Z-Z顺序中的第几个变换系数
               for (k = 0; k < numcoeff; k++)
               {
@@ -2782,7 +2816,7 @@ void readCBPandCoeffsFromNAL(struct img_par *img,struct inp_par *inp)
 
                   img->cof[i][j][i0][j0]= levarr[k]*dequant_coef[qp_rem][i0][j0]<<qp_per;	//++ i,j标识16*16块中的哪一个4*4块;i0,j0标识4*4块内的哪一个位置的变换系数
                 }
-              }
+              }*/
             }
             else
             {
@@ -2797,17 +2831,17 @@ void readCBPandCoeffsFromNAL(struct img_par *img,struct inp_par *inp)
           // CABAC 
           for (j=block_y; j < block_y+2; j++)
           {
-            //jj=j/2;
+            jj=j/2;
             for (i=block_x; i < block_x+2; i++)
             {
-              //ii = i/2;
-              //b8 = 2*jj+ii;
+              ii = i/2;
+              b8 = 2*jj+ii;
 
               if (IS_NEWINTRA (currMB))   start_scan = 1; // skip DC coeff
               else                        start_scan = 0; // take all coeffs
 
-              img->subblock_x = i; // position for coeff_count ctx
-              img->subblock_y = j; // position for coeff_count ctx
+  //            img->subblock_x = i; // position for coeff_count ctx
+   //           img->subblock_y = j; // position for coeff_count ctx
               if (cbp & (1<<b8))  // are there any coeff in current block at all
               {
                 coef_ctr = start_scan-1;
@@ -2822,22 +2856,24 @@ void readCBPandCoeffsFromNAL(struct img_par *img,struct inp_par *inp)
                   currSE.type         = (IS_INTRA(currMB) ?
                                         (k==0 ? SE_LUM_DC_INTRA : SE_LUM_AC_INTRA) :
                                         (k==0 ? SE_LUM_DC_INTER : SE_LUM_AC_INTER));
-                  img->is_intra_block = IS_INTRA(currMB);
+//                  img->is_intra_block = IS_INTRA(currMB);
                   
 #if TRACE
                   sprintf(currSE.tracestring, "Luma sng ");
 #endif
                   dP = &(currSlice->partArr[partMap[currSE.type]]);
                   
-                  if (active_pps->entropy_coding_mode_flag == UVLC || dP->bitstream->ei_flag)  currSE.mapping = linfo_levrun_inter;
-                  else                                                     currSE.reading = readRunLevel_CABAC;
-                  
+//                  if (active_pps->entropy_coding_mode_flag == UVLC || dP->bitstream->ei_flag)  currSE.mapping = linfo_levrun_inter;
+//                  else                                                     currSE.reading = readRunLevel_CABAC;
+
+                  dP->readSyntaxElement = readSyntaxElement_UVLC_Simp;
                   dP->readSyntaxElement(&currSE,img,inp,dP);
-                  level = currSE.value1;
+				  dP->readSyntaxElement = readSyntaxElement_UVLC;
+ /*                 level = currSE.value1;
                   run   = currSE.value2;
                   len   = currSE.len;
                   
-                  if (level != 0)    /* leave if len=1 */
+                  if (level != 0)    // leave if len=1 
                   {
                     coef_ctr             += run+1;
 
@@ -2852,7 +2888,7 @@ void readCBPandCoeffsFromNAL(struct img_par *img,struct inp_par *inp)
                     }
                     currMB->cbp_blk      |= 1 << ((j<<2) + i) ;
                     img->cof[i][j][i0][j0]= level*dequant_coef[qp_rem][i0][j0]<<qp_per;
-                  }
+                  }*/
                 }
               }
             }
@@ -2860,23 +2896,23 @@ void readCBPandCoeffsFromNAL(struct img_par *img,struct inp_par *inp)
       } 
     }
   }
-
+/*
   for (j=4;j<6;j++) // reset all chroma coeffs before read
     for (i=0;i<4;i++)
       for (iii=0;iii<4;iii++)
         for (jjj=0;jjj<4;jjj++)
           img->cof[i][j][iii][jjj]=0;
-
-  m2 =img->mb_x*2;
-  jg2=img->mb_y*2;
+*/
+//  m2 =img->mb_x*2;
+//  jg2=img->mb_y*2;
 
   // chroma 2x2 DC coeff
   if(cbp>15)
   {
     for (ll=0;ll<3;ll+=2)
     {
-      for (i=0;i<4;i++)
-        img->cofu[i]=0;
+//      for (i=0;i<4;i++)
+//        img->cofu[i]=0;
 
 
       if (active_pps->entropy_coding_mode_flag == UVLC)
@@ -2884,7 +2920,7 @@ void readCBPandCoeffsFromNAL(struct img_par *img,struct inp_par *inp)
 
         readCoeff4x4_CAVLC(img, inp, CHROMA_DC, 0, 0,
                             levarr, runarr, &numcoeff);
-        coef_ctr=-1;
+        /*coef_ctr=-1;
         level=1;
         for(k = 0; k < numcoeff; k++)
         {
@@ -2894,7 +2930,7 @@ void readCBPandCoeffsFromNAL(struct img_par *img,struct inp_par *inp)
             coef_ctr=coef_ctr+runarr[k]+1;
             img->cofu[coef_ctr]=levarr[k];
           }
-        }
+        }*/
       }
       else
       {
@@ -2904,21 +2940,23 @@ void readCBPandCoeffsFromNAL(struct img_par *img,struct inp_par *inp)
         {
           currSE.context      = CHROMA_DC;
           currSE.type         = (IS_INTRA(currMB) ? SE_CHR_DC_INTRA : SE_CHR_DC_INTER);
-          img->is_intra_block =  IS_INTRA(currMB);
-          img->is_v_block     = ll;
+ //         img->is_intra_block =  IS_INTRA(currMB);
+//          img->is_v_block     = ll;
 
 #if TRACE
           snprintf(currSE.tracestring, TRACESTRING_SIZE, " 2x2 DC Chroma ");
 #endif
           dP = &(currSlice->partArr[partMap[currSE.type]]);
-        
+  /*      
           if (active_pps->entropy_coding_mode_flag == UVLC || dP->bitstream->ei_flag)
             currSE.mapping = linfo_levrun_c2x2;
           else
             currSE.reading = readRunLevel_CABAC;
-
+*/
+          dP->readSyntaxElement = readSyntaxElement_UVLC_Simp;
           dP->readSyntaxElement(&currSE,img,inp,dP);
-          level = currSE.value1;
+		  dP->readSyntaxElement = readSyntaxElement_UVLC;
+/*         level = currSE.value1;
           run = currSE.value2;
           len = currSE.len;
           if (level != 0)
@@ -2934,10 +2972,10 @@ void readCBPandCoeffsFromNAL(struct img_par *img,struct inp_par *inp)
             // functionality).
             assert (coef_ctr < 4);
             img->cofu[coef_ctr]=level;
-          }
+          }*/
         }
       }
-
+/*
       if (smb) // check to see if MB type is SPred or SIntra4x4 
       {
          img->cof[0+ll][4][0][0]=img->cofu[0];   img->cof[1+ll][4][0][0]=img->cofu[1];
@@ -2951,7 +2989,7 @@ void readCBPandCoeffsFromNAL(struct img_par *img,struct inp_par *inp)
         img->cof[1+ll][4][0][0]=(img->cofu[0]-img->cofu[1]+img->cofu[2]-img->cofu[3])>>1;	//++ 色度DC系数反
         img->cof[0+ll][5][0][0]=(img->cofu[0]+img->cofu[1]-img->cofu[2]-img->cofu[3])>>1;	//++ Hadamard变换
         img->cof[1+ll][5][0][0]=(img->cofu[0]-img->cofu[1]-img->cofu[2]+img->cofu[3])>>1;	//+++++++++++++++++
-      }
+      }*/
     }
   }
 
@@ -2960,7 +2998,6 @@ void readCBPandCoeffsFromNAL(struct img_par *img,struct inp_par *inp)
     for (j=4; j < 6; j++)
       for (i=0; i < 4; i++)
         img->nz_coeff [img->current_mb_nr ][i][j]=0;
-
 
   // chroma AC coeff, all zero from start_scan
   uv=-1;
@@ -2971,19 +3008,19 @@ void readCBPandCoeffsFromNAL(struct img_par *img,struct inp_par *inp)
     {
       for (j=block_y; j < block_y+2; j++)
       {
-        jj=j/2;
-        j1=j-4;
+   //     jj=j/2;
+   //     j1=j-4;
         for (i=block_x; i < block_x+2; i++)
         {
 
-          ii=i/2;
-          i1=i%2;
+  //        ii=i/2;
+  //        i1=i%2;
 
           if (active_pps->entropy_coding_mode_flag == UVLC)
           {
             readCoeff4x4_CAVLC(img, inp, CHROMA_AC, i, j,
                                 levarr, runarr, &numcoeff);
-            coef_ctr=0;
+            /*coef_ctr=0;
             level=1;
             uv++;
             for(k = 0; k < numcoeff;k++)
@@ -3005,37 +3042,39 @@ void readCBPandCoeffsFromNAL(struct img_par *img,struct inp_par *inp)
 
                 img->cof[i][j][i0][j0]=levarr[k]*dequant_coef[qp_rem_uv][i0][j0]<<qp_per_uv;
               }
-            }
+            }*/
           }
 
           else
           {
-            coef_ctr=0;
-            level=1;
-            uv++;
+   //         coef_ctr=0;
+   //         level=1;
+   //         uv++;
 
-            img->subblock_y = j/5;
-            img->subblock_x = i%2;
+ //           img->subblock_y = j/5;
+ //           img->subblock_x = i%2;
 
             for(k=0;(k<16)&&(level!=0);k++)
             {
               currSE.context      = CHROMA_AC;
               currSE.type         = (IS_INTRA(currMB) ? SE_CHR_AC_INTRA : SE_CHR_AC_INTER);
-              img->is_intra_block =  IS_INTRA(currMB);
-              img->is_v_block     = (uv>=4);
+ //             img->is_intra_block =  IS_INTRA(currMB);
+ //             img->is_v_block     = (uv>=4);
 
 #if TRACE
               snprintf(currSE.tracestring, TRACESTRING_SIZE, " AC Chroma ");
 #endif
               dP = &(currSlice->partArr[partMap[currSE.type]]);
-            
+/*            
               if (active_pps->entropy_coding_mode_flag == UVLC || dP->bitstream->ei_flag)
                 currSE.mapping = linfo_levrun_inter;
               else
                 currSE.reading = readRunLevel_CABAC;
-                       
+*/
+			  dP->readSyntaxElement = readSyntaxElement_UVLC_Simp;
               dP->readSyntaxElement(&currSE,img,inp,dP);
-              level = currSE.value1;
+			  dP->readSyntaxElement = readSyntaxElement_UVLC;
+	/*            level = currSE.value1;
               run = currSE.value2;
               len = currSE.len;
 
@@ -3054,7 +3093,7 @@ void readCBPandCoeffsFromNAL(struct img_par *img,struct inp_par *inp)
                   j0=FIELD_SCAN[coef_ctr][1];
                 }
                 img->cof[i][j][i0][j0]=level*dequant_coef[qp_rem_uv][i0][j0]<<qp_per_uv;
-              }
+              }*/
             }
           }
         }
